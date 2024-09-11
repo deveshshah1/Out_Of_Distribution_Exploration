@@ -5,6 +5,7 @@
 
 # Specific Repo Files/Folders
 dataset/images/
+*.pth
 .DS_Store
 
 # User-specific files
