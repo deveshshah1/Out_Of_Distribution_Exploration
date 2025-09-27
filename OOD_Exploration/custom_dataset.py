@@ -23,7 +23,7 @@ class PlantPathologyDataset(Dataset):
         self.stage = stage
 
         self.data = pd.read_csv(f"{dataset_path}/dataset.csv")
-        self.data = self.data[self.data["stage"] == self.stage]
+        self.data = self.data[self.data["stage"] == self.stage].reset_index(drop=True)
 
         self.label_encoding = {
             "healthy": 0,
@@ -33,6 +33,7 @@ class PlantPathologyDataset(Dataset):
             "powdery_mildew": 4,
         }
         self.label_decoding = {v: k for k, v in self.label_encoding.items()}
+        self.data["label_encoding"] = self.data["label"].map(self.label_encoding)
 
         if self.stage == "train":
             self.transform = transforms.Compose(
@@ -58,14 +59,23 @@ class PlantPathologyDataset(Dataset):
     def __len__(self):
         return len(self.data)
 
+    def get_class_weights(self):
+        class_counts = self.data["label_encoding"].value_counts().to_dict()
+        total_samples = len(self.data)
+        class_weights = {
+            label_encoding: total_samples / count
+            for label_encoding, count in class_counts.items()
+        }
+        weights = self.data["label_encoding"].map(class_weights).tolist()
+        return torch.tensor(weights, dtype=torch.float)
+
     def __getitem__(self, idx):
         item = self.data.iloc[idx]
         img_path = f"{self.base_img_dir}/{item['image_path']}"
         image = Image.open(img_path)
 
-        label = item["label"]
-        label = self.label_encoding[label]
-        label = torch.tensor(label, dtype=torch.long)
+        label_encoding = item["label_encoding"]
+        label = torch.tensor(label_encoding, dtype=torch.long)
 
         if self.transform:
             image = self.transform(image)

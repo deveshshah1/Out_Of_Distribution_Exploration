@@ -14,7 +14,7 @@ class BaselineModel(nn.Module):
         return self.model(x)
 
 
-if __name__=="__main__":
+if __name__ == "__main__":
     model = BaselineModel()
     print(model)
 

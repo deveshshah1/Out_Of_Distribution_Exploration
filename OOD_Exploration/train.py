@@ -115,5 +115,6 @@ def define_all_callbacks(model_dir, model_name):
 
     return callbacks
 
+
 if __name__ == "__main__":
     train(use_wandb=True)

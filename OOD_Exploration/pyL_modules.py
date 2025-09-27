@@ -1,7 +1,7 @@
 import yaml
 import torch
 import pytorch_lightning as pl
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, WeightedRandomSampler
 from custom_dataset import PlantPathologyDataset
 from model import BaselineModel
 
@@ -26,10 +26,16 @@ class PyLDataModule(pl.LightningDataModule):
         )
 
     def train_dataloader(self):
+        sampler = WeightedRandomSampler(
+            weights=self.train_set.get_class_weights(),
+            num_samples=len(self.train_set),
+            replacement=True,
+        )
+
         return DataLoader(
             self.train_set,
             batch_size=config_training["training_hyperparameters"]["batch_size"],
-            shuffle=True,
+            sampler=sampler,
             pin_memory=True,
             drop_last=True,
             num_workers=4,
@@ -101,6 +107,7 @@ class PyLModel(pl.LightningModule):
                 "frequency": 1,
             },
         }
+
 
 if __name__ == "__main__":
     dataset = PyLDataModule(dataset_path="./dataset/")
