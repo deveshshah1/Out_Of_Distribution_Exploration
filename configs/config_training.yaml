@@ -20,6 +20,6 @@ wandb_config:
   desc: Weights and Biases Configuration
   value:
     project: "OOD_Exploration"
-    entity: "devesh"
+    entity: "deveshshah-university-of-michigan"
     mode: "online"
     config: {}
