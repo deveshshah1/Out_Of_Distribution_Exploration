@@ -15,7 +15,7 @@ def get_device_params():
     if accelerator == "gpu" and devices > 1:
         strategy = "ddp"
     else:
-        strategy = None
+        strategy = "auto"
 
     return {
         "accelerator": accelerator,

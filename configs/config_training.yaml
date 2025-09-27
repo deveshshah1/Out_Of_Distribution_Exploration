@@ -8,13 +8,13 @@ training_hyperparameters:
   value:
     batch_size: 32
     learning_rate: 0.001
-    num_epochs: 50
+    num_epochs: 2
 
 experiment_details:
   desc: Experiment Details
   value:
     model_dir: "./trained_models/"
-    experiment_name: "test1"
+    experiment_name: "test3"
 
 wandb_config:
   desc: Weights and Biases Configuration

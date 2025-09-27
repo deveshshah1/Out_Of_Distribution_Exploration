@@ -8,6 +8,9 @@ dataset/images/
 dataset/images_resized/
 dataset/OOD_images/
 sandbox/
+lightning_logs/
+wandb/
+trained_models/
 *.pth
 .DS_Store
 

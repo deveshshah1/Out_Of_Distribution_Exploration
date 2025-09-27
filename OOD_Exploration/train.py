@@ -65,7 +65,7 @@ def train(use_wandb=True):
         strategy=device_params["strategy"],
         devices=device_params["devices"],
         precision=32,
-        max_epochs=config_training["training_hyperparameters"]["max_epochs"],
+        max_epochs=config_training["training_hyperparameters"]["num_epochs"],
         callbacks=callbacks,
         gradient_clip_val=1.0,
         # limit_train_batches=0.02,
@@ -77,7 +77,8 @@ def train(use_wandb=True):
     trainer.fit(model, dataset)
 
     # Finish the experiment
-    wandb_logger.experiment.finish()
+    if use_wandb:
+        wandb_logger.experiment.finish()
 
 
 def define_all_callbacks(model_dir, model_name):
