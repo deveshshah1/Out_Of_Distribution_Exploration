@@ -5,6 +5,9 @@
 
 # Specific Repo Files/Folders
 dataset/images/
+dataset/images_resized/
+dataset/OOD_images/
+sandbox/
 *.pth
 .DS_Store
 

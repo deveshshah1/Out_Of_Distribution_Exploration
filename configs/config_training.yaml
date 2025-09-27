@@ -1,0 +1,25 @@
+dataset_configs:
+  desc: Dataset Configurations
+  value:
+    dataset_path: "./dataset/"
+
+training_hyperparameters:
+  desc: Training Hyperparameters
+  value:
+    batch_size: 32
+    learning_rate: 0.001
+    num_epochs: 50
+
+experiment_details:
+  desc: Experiment Details
+  value:
+    model_dir: "./trained_models/"
+    experiment_name: "test1"
+
+wandb_config:
+  desc: Weights and Biases Configuration
+  value:
+    project: "OOD_Exploration"
+    entity: "devesh"
+    mode: "online"
+    config: {}
