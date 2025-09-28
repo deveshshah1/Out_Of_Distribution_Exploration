@@ -11,6 +11,18 @@ from torchvision.transforms import v2
 
 
 class PlantPathologyDataset(Dataset):
+    # Class variables - accessible without instantiation
+    LABEL_ENCODING = {
+        "healthy": 0,
+        "scab": 1,
+        "rust": 2,
+        "frog_eye_leaf_spot": 3,
+        "powdery_mildew": 4,
+    }
+    
+    # Create decoding automatically from encoding
+    LABEL_DECODING = {v: k for k, v in LABEL_ENCODING.items()}
+
     def __init__(self, stage, dataset_path="./dataset/"):
         """
         Initializes the Plant Pathology Dataset.
@@ -28,15 +40,7 @@ class PlantPathologyDataset(Dataset):
                 drop=True
             )
 
-        self.label_encoding = {
-            "healthy": 0,
-            "scab": 1,
-            "rust": 2,
-            "frog_eye_leaf_spot": 3,
-            "powdery_mildew": 4,
-        }
-        self.label_decoding = {v: k for k, v in self.label_encoding.items()}
-        self.data["label_encoding"] = self.data["label"].map(self.label_encoding)
+        self.data["label_encoding"] = self.data["label"].map(PlantPathologyDataset.LABEL_ENCODING)
 
         if self.stage == "train":
             self.transform = transforms.Compose(
