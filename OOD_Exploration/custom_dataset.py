@@ -16,14 +16,17 @@ class PlantPathologyDataset(Dataset):
         Initializes the Plant Pathology Dataset.
 
         Args:
-            stage (str): Subset of the dataset to use ('train', 'val', 'test').
+            stage (str): Subset of the dataset to use ('train', 'val', 'test'). Else 'ALL'.
             base_img_dir (str): Directory where the images and metadata are stored.
         """
         self.base_img_dir = os.path.join(dataset_path, "images_resized")
         self.stage = stage
 
         self.data = pd.read_csv(f"{dataset_path}/dataset.csv")
-        self.data = self.data[self.data["stage"] == self.stage].reset_index(drop=True)
+        if self.stage in ["train", "val", "test"]:
+            self.data = self.data[self.data["stage"] == self.stage].reset_index(
+                drop=True
+            )
 
         self.label_encoding = {
             "healthy": 0,
@@ -77,10 +80,12 @@ class PlantPathologyDataset(Dataset):
         label_encoding = item["label_encoding"]
         label = torch.tensor(label_encoding, dtype=torch.long)
 
+        id = item["id"]
+
         if self.transform:
             image = self.transform(image)
 
-        return {"image": image, "label": label}
+        return {"id": id, "image": image, "label": label}
 
 
 if __name__ == "__main__":
@@ -101,7 +106,7 @@ if __name__ == "__main__":
 
     idx = 0
     first_item = data_set[idx]
-    print(first_item["image"].shape, first_item["label"])
+    print(first_item["id"], first_item["image"].shape, first_item["label"])
 
     print()
     print("Dataset Loaded Successfully")

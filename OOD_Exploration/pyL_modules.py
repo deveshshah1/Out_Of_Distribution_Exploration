@@ -65,7 +65,7 @@ class PyLModel(pl.LightningModule):
         inputs = batch["image"]
         labels = batch["label"]
 
-        outputs = self.model(inputs)
+        _, outputs = self.model(inputs)
         loss = self.criterion(outputs, labels)
 
         _, preds = torch.max(outputs, 1)
@@ -80,7 +80,7 @@ class PyLModel(pl.LightningModule):
         inputs = batch["image"]
         labels = batch["label"]
 
-        outputs = self.model(inputs)
+        _, outputs = self.model(inputs)
         loss = self.criterion(outputs, labels)
 
         _, preds = torch.max(outputs, 1)
@@ -88,6 +88,27 @@ class PyLModel(pl.LightningModule):
 
         self.log("val/loss", loss, prog_bar=True)
         self.log("val/accuracy", acc, prog_bar=True)
+
+    def predict_step(self, batch, batch_idx):
+        # Get inputs
+        inputs = batch["image"]
+        labels = batch["label"]
+        ids = batch["id"]
+
+        # Forward pass
+        self.model.eval()
+        with torch.no_grad():
+            emb, outputs = self.model(inputs)
+
+        _, preds = torch.max(outputs, 1)
+
+        return {
+            "id": ids,
+            "predicted_label": preds,
+            "true_label": labels,
+            "embedding": emb,
+            "logits": outputs,
+        }
 
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(
