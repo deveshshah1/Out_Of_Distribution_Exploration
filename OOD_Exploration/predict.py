@@ -7,6 +7,7 @@ import pytorch_lightning as pl
 from torch.utils.data import DataLoader
 from custom_dataset import PlantPathologyDataset
 from pyL_modules import PyLModel
+from utils.misc import get_device_params
 
 
 # Global config
@@ -48,25 +49,19 @@ def predict(stage, device, ckpt_to_use="_best_val_loss"):
     print(f"Device: {device}")
     model_path = os.path.join(ckpt_dir, ckpt_path)
     print(f"Loading model from {model_path}")
+    model = PyLModel.load_from_checkpoint(
+        model_path,
+        map_location=device,
+    ).to(device)
 
     if device.type == "cpu":
-        model = PyLModel.load_from_checkpoint(
-            model_path,
-            map_location=torch.device("cpu"),
-        ).to(device)
         trainer = pl.Trainer(accelerator="cpu", devices="auto")
     elif device.type == "cuda":
-        model = PyLModel.load_from_checkpoint(
-            model_path,
-            map_location=device,
-        ).to(device)
-        trainer = pl.Trainer(
-            accelerator="gpu", devices=[0],
-        )
+        trainer = pl.Trainer(accelerator="gpu", devices=[0])
+    elif device.type == "mps":
+        trainer = pl.Trainer(accelerator="mps", devices=1)
     else:
-        raise ValueError(
-            "Unsupported device type. Only 'cpu' and 'cuda' are supported."
-        )
+        raise ValueError("Unsupported device type")
 
     # Make predictions
     print("Making predictions...")
@@ -117,5 +112,7 @@ def predict(stage, device, ckpt_to_use="_best_val_loss"):
     
 
 if __name__ == "__main__":
-    predict(stage="ALL", device=torch.device("cpu"), ckpt_to_use="_best_val_loss")
+    device_params = get_device_params()
+    device = torch.device(device_params["accelerator"])
+    predict(stage="ALL", device=device, ckpt_to_use="_best_val_loss")
     print("Predictions saved successfully")
