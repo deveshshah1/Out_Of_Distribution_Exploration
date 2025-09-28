@@ -35,7 +35,7 @@ def train(use_wandb=True):
         wandb_logger.experiment.log_code("..")
         lr_monitor = LearningRateMonitor(logging_interval="step")
     else:
-        model_name = "local_test"
+        model_name = "local-test"
         wandb_logger = None
         callbacks = None
 

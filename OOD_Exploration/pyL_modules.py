@@ -39,6 +39,7 @@ class PyLDataModule(pl.LightningDataModule):
             pin_memory=True,
             drop_last=True,
             num_workers=4,
+            persistent_workers=True,
         )
 
     def val_dataloader(self):
@@ -49,6 +50,7 @@ class PyLDataModule(pl.LightningDataModule):
             pin_memory=True,
             drop_last=False,
             num_workers=4,
+            persistent_workers=True,
         )
 
 

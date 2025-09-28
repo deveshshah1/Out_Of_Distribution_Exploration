@@ -117,5 +117,5 @@ def predict(stage, device, ckpt_to_use="_best_val_loss"):
     
 
 if __name__ == "__main__":
-    predict(stage="ALL", device="cpu", ckpt_to_use="_best_val_loss")
+    predict(stage="ALL", device=torch.device("cpu"), ckpt_to_use="_best_val_loss")
     print("Predictions saved successfully")
