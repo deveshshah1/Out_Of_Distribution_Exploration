@@ -117,4 +117,4 @@ def define_all_callbacks(model_dir, model_name):
 
 
 if __name__ == "__main__":
-    train(use_wandb=True)
+    train(use_wandb=config_training["experiment_details"]["use_wandb"])
