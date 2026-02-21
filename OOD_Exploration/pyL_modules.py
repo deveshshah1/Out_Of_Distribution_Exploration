@@ -1,7 +1,10 @@
 import yaml
 import torch
 import pytorch_lightning as pl
+
 from torch.utils.data import DataLoader, WeightedRandomSampler
+from torchmetrics import Accuracy
+
 from custom_dataset import PlantPathologyDataset
 from model import BaselineModel
 from utils.custom_scheduluer import NoamScheduler
@@ -64,8 +67,13 @@ class PyLModel(pl.LightningModule):
         self.LABEL_ENCODING = config_training["plant_label_encoding"]
         self.LABEL_DECODING = {v: k for k, v in self.LABEL_ENCODING.items()}
 
-        self.model = BaselineModel(num_classes=len(self.LABEL_ENCODING))
+        num_classes = len(self.LABEL_ENCODING)
+        self.model = BaselineModel(num_classes=num_classes)
         self.criterion = torch.nn.CrossEntropyLoss()
+
+        self.val_acc = Accuracy(task="multiclass", num_classes=num_classes, average="micro")
+        self.val_balanced_acc = Accuracy(task="multiclass", num_classes=num_classes, average="macro")
+        self.val_per_class_acc = Accuracy(task="multiclass", num_classes=num_classes, average="none")
 
     def training_step(self, batch, batch_idx):
         inputs = batch["image"]
@@ -90,10 +98,28 @@ class PyLModel(pl.LightningModule):
         loss = self.criterion(outputs, labels)
 
         _, preds = torch.max(outputs, 1)
-        acc = torch.sum(preds == labels).float() / len(labels)
+        self.val_acc.update(preds, labels)
+        self.val_balanced_acc.update(preds, labels)
+        self.val_per_class_acc.update(preds, labels)
 
         self.log("val/loss", loss, prog_bar=True, on_step=False, on_epoch=True)
-        self.log("val/accuracy", acc, prog_bar=True, on_step=False, on_epoch=True)
+    
+    def on_validation_epoch_end(self):
+        val_acc = self.val_acc.compute()
+        balanced_acc = self.val_balanced_acc.compute()
+        per_class_acc = self.val_per_class_acc.compute()
+
+        self.log("val/accuracy", val_acc, prog_bar=True)
+        self.log("val/balanced_accuracy", balanced_acc, prog_bar=True)
+
+        for class_idx, acc in enumerate(per_class_acc):
+            class_name = self.LABEL_DECODING[class_idx]
+            self.log(f"val/accuracy_{class_name}", acc)
+
+        # Reset metrics for next epoch
+        self.val_acc.reset()
+        self.val_balanced_acc.reset()
+        self.val_per_class_acc.reset()
 
     def predict_step(self, batch, batch_idx):
         # Get inputs

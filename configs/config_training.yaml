@@ -16,8 +16,8 @@ experiment_details:
   desc: Experiment Details
   value:
     model_dir: "./trained_models/"
-    experiment_name: "test5"
-    use_wandb: False
+    experiment_name: "test2"
+    use_wandb: True
 
 plant_label_encoding:
   desc: Plant Label Encoding
