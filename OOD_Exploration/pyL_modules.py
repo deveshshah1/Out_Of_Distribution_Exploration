@@ -4,6 +4,7 @@ import pytorch_lightning as pl
 from torch.utils.data import DataLoader, WeightedRandomSampler
 from custom_dataset import PlantPathologyDataset
 from model import BaselineModel
+from .utils.custom_scheduluer import NoamScheduler
 
 
 # Global config
@@ -71,10 +72,10 @@ class PyLModel(pl.LightningModule):
         loss = self.criterion(outputs, labels)
 
         _, preds = torch.max(outputs, 1)
-        acc = torch.sum(preds == labels.data).float() / len(labels)
+        acc = torch.sum(preds == labels).float() / len(labels)
 
-        self.log("train/loss", loss, prog_bar=True)
-        self.log("train/accuracy", acc, prog_bar=True)
+        self.log("train/loss", loss, prog_bar=True, on_step=True, on_epoch=True)
+        self.log("train/accuracy", acc, prog_bar=True, on_step=True, on_epoch=True)
 
         return loss
 
@@ -86,10 +87,10 @@ class PyLModel(pl.LightningModule):
         loss = self.criterion(outputs, labels)
 
         _, preds = torch.max(outputs, 1)
-        acc = torch.sum(preds == labels.data).float() / len(labels)
+        acc = torch.sum(preds == labels).float() / len(labels)
 
-        self.log("val/loss", loss, prog_bar=True)
-        self.log("val/accuracy", acc, prog_bar=True)
+        self.log("val/loss", loss, prog_bar=True, on_step=False, on_epoch=True)
+        self.log("val/accuracy", acc, prog_bar=True, on_step=False, on_epoch=True)
 
     def predict_step(self, batch, batch_idx):
         # Get inputs
@@ -100,33 +101,35 @@ class PyLModel(pl.LightningModule):
         # Forward pass
         self.model.eval()
         with torch.no_grad():
-            emb, outputs = self.model(inputs)
+            emb, logits = self.model(inputs)
 
-        _, preds = torch.max(outputs, 1)
+        outputs = torch.nn.functional.softmax(logits, dim=1) 
+        preds = torch.argmax(outputs, dim=1)
 
         return {
             "id": ids,
             "predicted_label": preds,
             "true_label": labels,
             "embedding": emb,
-            "logits": outputs,
+            "outputs": outputs,
+            "logits": logits,
         }
 
     def configure_optimizers(self):
-        optimizer = torch.optim.Adam(
+        optimizer = torch.optim.AdamW(
             self.model.parameters(),
             lr=config_training["training_hyperparameters"]["learning_rate"],
+            weight_decay=config_training["training_hyperparameters"]["weight_decay"],
         )
-        scheduler = torch.optim.lr_scheduler.StepLR(
+        scheduler = NoamScheduler(
             optimizer,
-            step_size=7,
-            gamma=0.1,
+            warmup_steps=config_training["training_hyperparameters"]["warmup_steps"],
         )
         return {
             "optimizer": optimizer,
             "lr_scheduler": {
                 "scheduler": scheduler,
-                "interval": "epoch",
+                "interval": "step",
                 "frequency": 1,
             },
         }

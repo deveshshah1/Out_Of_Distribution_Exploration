@@ -1,5 +1,6 @@
 import torch
 import os
+import yaml
 
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -9,20 +10,13 @@ from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms
 from torchvision.transforms import v2
 
+# Global config
+with open("./configs/config_training.yaml", "r") as file:
+    config_training = yaml.safe_load(file)
+    config_training = {k: v["value"] for k, v in config_training.items()}
+
 
 class PlantPathologyDataset(Dataset):
-    # Class variables - accessible without instantiation
-    LABEL_ENCODING = {
-        "healthy": 0,
-        "scab": 1,
-        "rust": 2,
-        "frog_eye_leaf_spot": 3,
-        "powdery_mildew": 4,
-    }
-    
-    # Create decoding automatically from encoding
-    LABEL_DECODING = {v: k for k, v in LABEL_ENCODING.items()}
-
     def __init__(self, stage, dataset_path="./dataset/"):
         """
         Initializes the Plant Pathology Dataset.
@@ -34,13 +28,16 @@ class PlantPathologyDataset(Dataset):
         self.base_img_dir = os.path.join(dataset_path, "images_resized")
         self.stage = stage
 
+        self.LABEL_ENCODING = config_training["plant_label_encoding"]
+        self.LABEL_DECODING = {v: k for k, v in self.LABEL_ENCODING.items()}
+
         self.data = pd.read_csv(f"{dataset_path}/dataset.csv")
         if self.stage in ["train", "val", "test"]:
             self.data = self.data[self.data["stage"] == self.stage].reset_index(
                 drop=True
             )
 
-        self.data["label_encoding"] = self.data["label"].map(PlantPathologyDataset.LABEL_ENCODING)
+        self.data["label_encoding"] = self.data["label"].map(self.LABEL_ENCODING)
 
         if self.stage == "train":
             self.transform = transforms.Compose(
@@ -103,10 +100,10 @@ if __name__ == "__main__":
     for i in range(len(images_batch)):
         row, col = i // 3, i % 3
         ax[row, col].imshow(images_batch[i].permute(1, 2, 0))
-        ax[row, col].set_title(data_set.label_decoding[labels_batch[i].item()])
+        ax[row, col].set_title(data_set.LABEL_DECODING[labels_batch[i].item()])
         ax[row, col].axis("off")
     fig.tight_layout()
-    # plt.show()
+    plt.show()
 
     idx = 0
     first_item = data_set[idx]

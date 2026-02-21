@@ -7,8 +7,10 @@ training_hyperparameters:
   desc: Training Hyperparameters
   value:
     batch_size: 32
-    learning_rate: 0.001
     num_epochs: 2
+    learning_rate: 0.001
+    weight_decay: 0.0001
+    warmup_steps: 4000
 
 experiment_details:
   desc: Experiment Details
@@ -16,6 +18,15 @@ experiment_details:
     model_dir: "./trained_models/"
     experiment_name: "test4"
     use_wandb: False
+
+plant_label_encoding:
+  desc: Plant Label Encoding
+  value:
+    "healthy": 0
+    "scab": 1
+    "rust": 2
+    "frog_eye_leaf_spot": 3
+    "powdery_mildew": 4
 
 wandb_config:
   desc: Weights and Biases Configuration
