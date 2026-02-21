@@ -9,7 +9,6 @@ from custom_dataset import PlantPathologyDataset
 from pyL_modules import PyLModel
 from utils.misc import get_device_params
 
-
 # Global config
 with open("./configs/config_training.yaml", "r") as file:
     config_training = yaml.safe_load(file)
@@ -69,24 +68,30 @@ def predict(stage, device, ckpt_to_use="_best_val_loss"):
 
     # Accumulate predictions
     print("Accumulating predictions...")
-    id, embedding, predicted_label, true_label, logits = [], [], [], [], []
+    id, embedding, predicted_label, true_label, outputs, logits = [], [], [], [], [], []
     for batch in out_batches:
         id.append(np.array(batch["id"]))
         embedding.append(batch["embedding"].cpu().numpy().astype(np.float32))
         predicted_label.append(np.array(batch["predicted_label"]))
         true_label.append(np.array(batch["true_label"]))
+        outputs.append(batch["outputs"].cpu().numpy().astype(np.float32))
         logits.append(batch["logits"].cpu().numpy().astype(np.float32))
 
     id = np.concatenate(id, axis=0)
     embedding = np.concatenate(embedding, axis=0)
     predicted_label = np.concatenate(predicted_label, axis=0)
     true_label = np.concatenate(true_label, axis=0)
+    outputs = np.concatenate(outputs, axis=0)
     logits = np.concatenate(logits, axis=0)
 
     embedding_list = []
     for idx in range(len(embedding)):
         embedding_list.append(embedding[idx])
-    
+
+    outputs_list = []
+    for idx in range(len(outputs)):
+        outputs_list.append(outputs[idx])
+
     logits_list = []
     for idx in range(len(logits)):
         logits_list.append(logits[idx])
@@ -97,8 +102,9 @@ def predict(stage, device, ckpt_to_use="_best_val_loss"):
             "id": id,
             "true_label": true_label,
             "predicted_label": predicted_label,
-            "logits": logits_list,
             "embedding": embedding_list,
+            "outputs": outputs_list,
+            "logits": logits_list,
         }
     )
 
@@ -114,5 +120,6 @@ def predict(stage, device, ckpt_to_use="_best_val_loss"):
 if __name__ == "__main__":
     device_params = get_device_params()
     device = torch.device(device_params["accelerator"])
-    predict(stage="ALL", device=device, ckpt_to_use="_best_val_loss")
+    for ckpt in ["_best_val_loss", "_best_train_loss"]:
+        predict(stage="ALL", device=device, ckpt_to_use=ckpt)
     print("Predictions saved successfully")
