@@ -61,7 +61,10 @@ class PyLModel(pl.LightningModule):
         self.save_hyperparameters()
         self.wandb_logger = wandb_logger
 
-        self.model = BaselineModel()
+        self.LABEL_ENCODING = config_training["plant_label_encoding"]
+        self.LABEL_DECODING = {v: k for k, v in self.LABEL_ENCODING.items()}
+
+        self.model = BaselineModel(num_classes=len(self.LABEL_ENCODING))
         self.criterion = torch.nn.CrossEntropyLoss()
 
     def training_step(self, batch, batch_idx):
@@ -103,13 +106,16 @@ class PyLModel(pl.LightningModule):
         with torch.no_grad():
             emb, logits = self.model(inputs)
 
-        outputs = torch.nn.functional.softmax(logits, dim=1) 
+        outputs = torch.nn.functional.softmax(logits, dim=1)
         preds = torch.argmax(outputs, dim=1)
+
+        true_label_name = [self.LABEL_DECODING[label.item()] for label in labels]
+        pred_label_name = [self.LABEL_DECODING[pred.item()] for pred in preds]
 
         return {
             "id": ids,
-            "predicted_label": preds,
-            "true_label": labels,
+            "predicted_label": pred_label_name,
+            "true_label": true_label_name,
             "embedding": emb,
             "outputs": outputs,
             "logits": logits,
