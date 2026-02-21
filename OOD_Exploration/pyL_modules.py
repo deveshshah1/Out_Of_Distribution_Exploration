@@ -4,7 +4,7 @@ import pytorch_lightning as pl
 from torch.utils.data import DataLoader, WeightedRandomSampler
 from custom_dataset import PlantPathologyDataset
 from model import BaselineModel
-from .utils.custom_scheduluer import NoamScheduler
+from utils.custom_scheduluer import NoamScheduler
 
 
 # Global config
