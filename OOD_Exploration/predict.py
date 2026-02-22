@@ -15,7 +15,13 @@ with open("./configs/config_training.yaml", "r") as file:
     config_training = {k: v["value"] for k, v in config_training.items()}
 
 
-def predict(stage, device, ckpt_to_use="_best_val_loss"):
+def predict(
+    stage,
+    device,
+    model_dataset_name=None,
+    model_dataset_path=None,
+    ckpt_to_use="_best_val_loss",
+):
     # Find correct ckpt for given model run
     model_dir = config_training["experiment_details"]["model_dir"]
     exp_dir = config_training["experiment_details"]["experiment_name"]
@@ -30,18 +36,17 @@ def predict(stage, device, ckpt_to_use="_best_val_loss"):
 
     # Create results directory
     results_dir = os.path.join(model_dir, exp_dir, f"predictions{ckpt_to_use}")
-    os.makedirs(results_dir, exist_ok=False)
+    os.makedirs(results_dir, exist_ok=True)
 
     # Load the dataset
-    model_dataset_path = config_training["dataset_configs"]["dataset_path"]
+    if model_dataset_path is None:
+        model_dataset_path = config_training["dataset_configs"]["dataset_path"]
     df = pd.read_csv(f"{model_dataset_path}/dataset.csv")
 
     # Define dataset and data loader
     print("Loading dataset")
     test_data = PlantPathologyDataset(stage=stage)
-    test_loader = DataLoader(
-        test_data, batch_size=32, shuffle=False, num_workers=8
-    )
+    test_loader = DataLoader(test_data, batch_size=32, shuffle=False, num_workers=8)
     assert len(df) == len(test_data), "Dataset length mismatch"
 
     # Load the model
@@ -111,15 +116,27 @@ def predict(stage, device, ckpt_to_use="_best_val_loss"):
     df = pd.merge(df, df_to_add, on="id", how="left")
 
     # Save to parquet
-    save_path = os.path.join(results_dir, f"{stage}_predictions.parquet")
+    save_path = os.path.join(results_dir, f"{model_dataset_name}_predictions.parquet")
     df.to_parquet(save_path, index=False)
 
     return
-    
+
 
 if __name__ == "__main__":
     device_params = get_device_params()
     device = torch.device(device_params["accelerator"])
+    datasets_of_interest = {
+        "plantpathology": config_training["dataset_configs"]["dataset_path"],
+        "stanfordcars": config_training["OOD_datasets"]["stanfordcars"],
+        "flowers102": config_training["OOD_datasets"]["flowers102"],
+    }
     for ckpt in ["_best_val_loss", "_best_train_loss"]:
-        predict(stage="ALL", device=device, ckpt_to_use=ckpt)
+        for model_dataset_name, model_dataset_path in datasets_of_interest.items():
+            predict(
+                stage="ALL",
+                device=device,
+                ckpt_to_use=ckpt,
+                model_dataset_name=model_dataset_name,
+                model_dataset_path=model_dataset_path,
+            )
     print("Predictions saved successfully")
