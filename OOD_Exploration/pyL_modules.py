@@ -71,9 +71,15 @@ class PyLModel(pl.LightningModule):
         self.model = BaselineModel(num_classes=num_classes)
         self.criterion = torch.nn.CrossEntropyLoss()
 
-        self.val_acc = Accuracy(task="multiclass", num_classes=num_classes, average="micro")
-        self.val_balanced_acc = Accuracy(task="multiclass", num_classes=num_classes, average="macro")
-        self.val_per_class_acc = Accuracy(task="multiclass", num_classes=num_classes, average="none")
+        self.val_acc = Accuracy(
+            task="multiclass", num_classes=num_classes, average="micro"
+        )
+        self.val_balanced_acc = Accuracy(
+            task="multiclass", num_classes=num_classes, average="macro"
+        )
+        self.val_per_class_acc = Accuracy(
+            task="multiclass", num_classes=num_classes, average="none"
+        )
 
     def training_step(self, batch, batch_idx):
         inputs = batch["image"]
@@ -103,7 +109,7 @@ class PyLModel(pl.LightningModule):
         self.val_per_class_acc.update(preds, labels)
 
         self.log("val/loss", loss, prog_bar=True, on_step=False, on_epoch=True)
-    
+
     def on_validation_epoch_end(self):
         val_acc = self.val_acc.compute()
         balanced_acc = self.val_balanced_acc.compute()
@@ -135,7 +141,12 @@ class PyLModel(pl.LightningModule):
         outputs = torch.nn.functional.softmax(logits, dim=1)
         preds = torch.argmax(outputs, dim=1)
 
-        true_label_name = [self.LABEL_DECODING[label.item()] for label in labels]
+        true_label_name = [
+            self.LABEL_DECODING[label.item()]
+            if label.item() in self.LABEL_DECODING
+            else "Unknown"
+            for label in labels
+        ]
         pred_label_name = [self.LABEL_DECODING[pred.item()] for pred in preds]
 
         return {

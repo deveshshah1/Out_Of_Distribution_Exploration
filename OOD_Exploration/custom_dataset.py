@@ -23,7 +23,7 @@ class PlantPathologyDataset(Dataset):
 
         Args:
             stage (str): Subset of the dataset to use ('train', 'val', 'test'). Else 'ALL'.
-            base_img_dir (str): Directory where the images and metadata are stored.
+            dataset_path (str): Directory where the images and metadata are stored.
         """
         self.base_img_dir = os.path.join(dataset_path, "images_resized")
         self.stage = stage
@@ -31,13 +31,14 @@ class PlantPathologyDataset(Dataset):
         self.LABEL_ENCODING = config_training["plant_label_encoding"]
         self.LABEL_DECODING = {v: k for k, v in self.LABEL_ENCODING.items()}
 
-        self.data = pd.read_csv(f"{dataset_path}/dataset.csv")
+        self.data = pd.read_csv(os.path.join(dataset_path, "dataset.csv"))
         if self.stage in ["train", "val", "test"]:
             self.data = self.data[self.data["stage"] == self.stage].reset_index(
                 drop=True
             )
 
         self.data["label_encoding"] = self.data["label"].map(self.LABEL_ENCODING)
+        self.data["label_encoding"].fillna(-1, inplace=True)
 
         if self.stage == "train":
             self.transform = transforms.Compose(

@@ -4,9 +4,10 @@
 ## Get latest from https://github.com/github/gitignore/blob/main/VisualStudio.gitignore
 
 # Specific Repo Files/Folders
-dataset/images/
-dataset/images_resized/
-dataset/OOD_images/
+dataset/plantpathology/
+dataset/flowers102/
+dataset/stanfordcars/
+dataset/svhn/
 sandbox/
 lightning_logs/
 wandb/
