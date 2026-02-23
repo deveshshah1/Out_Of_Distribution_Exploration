@@ -45,7 +45,7 @@ def predict(
 
     # Define dataset and data loader
     print("Loading dataset")
-    test_data = PlantPathologyDataset(stage=stage)
+    test_data = PlantPathologyDataset(stage=stage, dataset_path=model_dataset_path)
     test_loader = DataLoader(test_data, batch_size=32, shuffle=False, num_workers=8)
     assert len(df) == len(test_data), "Dataset length mismatch"
 
@@ -129,8 +129,9 @@ if __name__ == "__main__":
         "plantpathology": config_training["dataset_configs"]["dataset_path"],
         "stanfordcars": config_training["OOD_datasets"]["stanfordcars"],
         "flowers102": config_training["OOD_datasets"]["flowers102"],
+        "dtd": config_training["OOD_datasets"]["dtd"],
     }
-    for ckpt in ["_best_val_loss", "_best_train_loss"]:
+    for ckpt in ["_best_val_loss"]:
         for model_dataset_name, model_dataset_path in datasets_of_interest.items():
             predict(
                 stage="ALL",

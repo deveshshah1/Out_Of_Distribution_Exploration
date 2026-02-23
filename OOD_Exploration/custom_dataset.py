@@ -77,7 +77,7 @@ class PlantPathologyDataset(Dataset):
     def __getitem__(self, idx):
         item = self.data.iloc[idx]
         img_path = f"{self.base_img_dir}/{item['image_path']}"
-        image = Image.open(img_path)
+        image = Image.open(img_path).convert("RGB")  
 
         label_encoding = item["label_encoding"]
         label = torch.tensor(label_encoding, dtype=torch.long)

@@ -33,6 +33,7 @@ OOD_datasets:
   value:
     "stanfordcars": "./dataset/stanfordcars/"
     "flowers102": "./dataset/flowers102/"
+    "dtd": "./dataset/dtd/"
 
 wandb_config:
   desc: Weights and Biases Configuration
