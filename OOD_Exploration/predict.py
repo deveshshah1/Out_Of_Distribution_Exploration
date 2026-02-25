@@ -131,7 +131,7 @@ if __name__ == "__main__":
         "flowers102": config_training["OOD_datasets"]["flowers102"],
         "dtd": config_training["OOD_datasets"]["dtd"],
     }
-    for ckpt in ["_best_val_loss"]:
+    for ckpt in ["_best_val_loss", "_best_train_loss"]:
         for model_dataset_name, model_dataset_path in datasets_of_interest.items():
             predict(
                 stage="ALL",
