@@ -8,6 +8,7 @@ dataset/plantpathology/
 dataset/flowers102/
 dataset/stanfordcars/
 dataset/dtd/
+dataset/imagenet-o/
 sandbox/
 lightning_logs/
 wandb/
