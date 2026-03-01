@@ -19,12 +19,12 @@ with open("./configs/config_training.yaml", "r") as file:
 class PyLDataModule(pl.LightningDataModule):
     def __init__(self):
         super().__init__()
-        self.base_dataset_path = config_training["dataset_configs"]["dataset_path"]
+        self.base_dataset_path = config_training["dataset_configs"]["base_dataset_path"]
         self.dataset_name = config_training["dataset_configs"]["plantpathology"]
 
     def setup(self, stage=None):
         self.train_set = PlantPathologyDataset(
-            stage="train", dataset_path=self.base_dataset_path, dataset_name=self.dataset_name
+            stage="train", base_dataset_path=self.base_dataset_path, dataset_name=self.dataset_name
         )
         self.val_set = PlantPathologyDataset(
             stage="val", base_dataset_path=self.base_dataset_path, dataset_name=self.dataset_name
