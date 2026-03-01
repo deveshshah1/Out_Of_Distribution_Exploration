@@ -12,7 +12,7 @@ training_hyperparameters:
   desc: Training Hyperparameters
   value:
     batch_size: 32
-    num_epochs: 5
+    num_epochs: 25
     learning_rate: 0.001
     weight_decay: 0.0001
     warmup_steps: 4000
@@ -21,7 +21,7 @@ experiment_details:
   desc: Experiment Details
   value:
     model_dir: "./trained_models/"
-    experiment_name: "test_local_process_end_to_end"
+    experiment_name: "e1_baseline"
     use_wandb: True
 
 plant_label_encoding:
