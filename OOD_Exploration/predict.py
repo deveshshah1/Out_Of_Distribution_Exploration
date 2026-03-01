@@ -18,8 +18,9 @@ with open("./configs/config_training.yaml", "r") as file:
 def predict(
     stage,
     device,
-    model_dataset_name=None,
-    model_dataset_path=None,
+    base_dataset_path,
+    model_dataset_name,
+    model_dataset_path,
     ckpt_to_use="_best_val_loss",
 ):
     # Find correct ckpt for given model run
@@ -39,13 +40,11 @@ def predict(
     os.makedirs(results_dir, exist_ok=True)
 
     # Load the dataset
-    if model_dataset_path is None:
-        model_dataset_path = config_training["dataset_configs"]["dataset_path"]
-    df = pd.read_csv(f"{model_dataset_path}/dataset.csv")
+    df = pd.read_csv(os.path.join(base_dataset_path, model_dataset_path, "dataset.csv"))
 
     # Define dataset and data loader
     print("Loading dataset")
-    test_data = PlantPathologyDataset(stage=stage, dataset_path=model_dataset_path)
+    test_data = PlantPathologyDataset(stage=stage, base_dataset_path=base_dataset_path, dataset_name=model_dataset_path)
     test_loader = DataLoader(test_data, batch_size=32, shuffle=False, num_workers=8)
     assert len(df) == len(test_data), "Dataset length mismatch"
 
@@ -132,13 +131,13 @@ if __name__ == "__main__":
         "flowers102": config_training["dataset_configs"]["flowers102"],
         "dtd": config_training["dataset_configs"]["dtd"],
     }
-    datasets_of_interest = {k: os.path.join(base_dataset_path, v) for k, v in datasets_of_interest.items()}
-    for ckpt in ["_best_val_loss", "_best_train_loss"]:
+    for ckpt in ["_best_val_loss", "_best_train_loss", "_best_val_balanced_accuracy"]:
         for model_dataset_name, model_dataset_path in datasets_of_interest.items():
             predict(
                 stage="ALL",
                 device=device,
                 ckpt_to_use=ckpt,
+                base_dataset_path=base_dataset_path,
                 model_dataset_name=model_dataset_name,
                 model_dataset_path=model_dataset_path,
             )
