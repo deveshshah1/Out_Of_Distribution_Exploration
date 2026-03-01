@@ -70,7 +70,7 @@ class PyLModel(pl.LightningModule):
 
         num_classes = len(self.LABEL_ENCODING)
         self.model = BaselineModel(num_classes=num_classes)
-        self.criterion = torch.nn.CrossEntropyLoss()
+        self.criterion = torch.nn.BCEWithLogitsLoss()
 
         self.val_acc = Accuracy(
             task="multiclass", num_classes=num_classes, average="micro"
@@ -139,7 +139,7 @@ class PyLModel(pl.LightningModule):
         with torch.no_grad():
             emb, logits = self.model(inputs)
 
-        outputs = torch.nn.functional.softmax(logits, dim=1)
+        outputs = torch.sigmoid(logits)
         preds = torch.argmax(outputs, dim=1)
 
         true_label_name = [
