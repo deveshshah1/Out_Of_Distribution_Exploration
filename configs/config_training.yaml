@@ -1,7 +1,12 @@
 dataset_configs:
   desc: Dataset Configurations
   value:
-    dataset_path: "./dataset/plantpathology/"
+    base_dataset_path: "./dataset/" # LOCAL
+    # base_dataset_path: "/content/drive/MyDrive/Programming/dataset/" # GOOGLE COLAB
+    plantpathology: "plantpathology"
+    stanfordcars: "stanfordcars"
+    flowers102: "flowers102"
+    dtd: "dtd"
 
 training_hyperparameters:
   desc: Training Hyperparameters
@@ -27,13 +32,6 @@ plant_label_encoding:
     "rust": 2
     "frog_eye_leaf_spot": 3
     "powdery_mildew": 4
-
-OOD_datasets:
-  desc: Out-of-Distribution Datasets
-  value:
-    "stanfordcars": "./dataset/stanfordcars/"
-    "flowers102": "./dataset/flowers102/"
-    "dtd": "./dataset/dtd/"
 
 wandb_config:
   desc: Weights and Biases Configuration

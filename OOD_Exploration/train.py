@@ -41,9 +41,7 @@ def train(use_wandb=True):
 
     # Create Data Module
     print("Creating Data Module")
-    dataset = PyLDataModule(
-        dataset_path=config_training["dataset_configs"]["dataset_path"],
-    )
+    dataset = PyLDataModule()
 
     # Create Model
     print("Creating Model")

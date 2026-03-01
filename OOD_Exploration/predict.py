@@ -125,12 +125,14 @@ def predict(
 if __name__ == "__main__":
     device_params = get_device_params()
     device = torch.device(device_params["accelerator"])
+    base_dataset_path = config_training["dataset_configs"]["base_dataset_path"]
     datasets_of_interest = {
-        "plantpathology": config_training["dataset_configs"]["dataset_path"],
-        "stanfordcars": config_training["OOD_datasets"]["stanfordcars"],
-        "flowers102": config_training["OOD_datasets"]["flowers102"],
-        "dtd": config_training["OOD_datasets"]["dtd"],
+        "plantpathology": config_training["dataset_configs"]["plantpathology"],
+        "stanfordcars": config_training["dataset_configs"]["stanfordcars"],
+        "flowers102": config_training["dataset_configs"]["flowers102"],
+        "dtd": config_training["dataset_configs"]["dtd"],
     }
+    datasets_of_interest = {k: os.path.join(base_dataset_path, v) for k, v in datasets_of_interest.items()}
     for ckpt in ["_best_val_loss", "_best_train_loss"]:
         for model_dataset_name, model_dataset_path in datasets_of_interest.items():
             predict(

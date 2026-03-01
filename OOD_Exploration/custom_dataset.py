@@ -17,21 +17,22 @@ with open("./configs/config_training.yaml", "r") as file:
 
 
 class PlantPathologyDataset(Dataset):
-    def __init__(self, stage, dataset_path="./dataset/"):
+    def __init__(self, stage, base_dataset_path="./dataset/", dataset_name="plantpathology"):
         """
         Initializes the Plant Pathology Dataset.
 
         Args:
             stage (str): Subset of the dataset to use ('train', 'val', 'test'). Else 'ALL'.
-            dataset_path (str): Directory where the images and metadata are stored.
+            base_dataset_path (str): Base directory where the datasets are stored.
+            dataset_name (str): Name of the specific dataset to use.
         """
-        self.base_img_dir = os.path.join(dataset_path, "images_resized")
+        self.base_img_dir = os.path.join(base_dataset_path, dataset_name, "images_resized")
         self.stage = stage
 
         self.LABEL_ENCODING = config_training["plant_label_encoding"]
         self.LABEL_DECODING = {v: k for k, v in self.LABEL_ENCODING.items()}
 
-        self.data = pd.read_csv(os.path.join(dataset_path, "dataset.csv"))
+        self.data = pd.read_csv(os.path.join(base_dataset_path, dataset_name, "dataset.csv"))
         if self.stage in ["train", "val", "test"]:
             self.data = self.data[self.data["stage"] == self.stage].reset_index(
                 drop=True
@@ -92,7 +93,7 @@ class PlantPathologyDataset(Dataset):
 
 if __name__ == "__main__":
     stage = "train"
-    data_set = PlantPathologyDataset(stage=stage)
+    data_set = PlantPathologyDataset(stage=stage, base_dataset_path="./dataset/", dataset_name="plantpathology")
     data_loader = DataLoader(data_set, batch_size=9, shuffle=False)
     fig, ax = plt.subplots(3, 3, figsize=(10, 10))
     batch = next(iter(data_loader))
