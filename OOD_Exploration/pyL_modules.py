@@ -87,7 +87,8 @@ class PyLModel(pl.LightningModule):
         labels = batch["label"]
 
         _, outputs = self.model(inputs)
-        loss = self.criterion(outputs, labels)
+        labels_onehot = torch.nn.functional.one_hot(labels, num_classes=len(self.LABEL_ENCODING)).float()
+        loss = self.criterion(outputs, labels_onehot)
 
         _, preds = torch.max(outputs, 1)
         acc = torch.sum(preds == labels).float() / len(labels)
@@ -102,7 +103,8 @@ class PyLModel(pl.LightningModule):
         labels = batch["label"]
 
         _, outputs = self.model(inputs)
-        loss = self.criterion(outputs, labels)
+        labels_onehot = torch.nn.functional.one_hot(labels, num_classes=len(self.LABEL_ENCODING)).float()
+        loss = self.criterion(outputs, labels_onehot)
 
         _, preds = torch.max(outputs, 1)
         self.val_acc.update(preds, labels)

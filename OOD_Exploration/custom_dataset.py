@@ -81,16 +81,14 @@ class PlantPathologyDataset(Dataset):
         image = Image.open(img_path).convert("RGB")  
 
         label_encoding = item["label_encoding"]
-        label_onehot = torch.zeros(len(self.LABEL_ENCODING), dtype=torch.float32)
-        if label_encoding != -1:
-            label_onehot[label_encoding] = 1.0
+        label = torch.tensor(label_encoding, dtype=torch.long)
 
         id = item["id"]
 
         if self.transform:
             image = self.transform(image)
 
-        return {"id": id, "image": image, "label": label_onehot}
+        return {"id": id, "image": image, "label": label}
 
 
 if __name__ == "__main__":
