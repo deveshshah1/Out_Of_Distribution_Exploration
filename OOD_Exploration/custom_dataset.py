@@ -37,6 +37,10 @@ class PlantPathologyDataset(Dataset):
             self.data = self.data[self.data["stage"] == self.stage].reset_index(
                 drop=True
             )
+        
+        if stage == "train":
+            self.ood_data = pd.read_csv(os.path.join(base_dataset_path, "imagenet-o", "dataset.csv"))
+            self.data = pd.concat([self.data, self.ood_data], ignore_index=True).reset_index(drop=True)
 
         self.data["label_encoding"] = self.data["label"].map(self.LABEL_ENCODING)
         self.data["label_encoding"].fillna(-1, inplace=True)
@@ -61,6 +65,8 @@ class PlantPathologyDataset(Dataset):
             )
 
         print(f"{stage} dataset size: {len(self.data)}")
+        print(f"Class distribution in {stage} dataset:")
+        print(self.data["label"].value_counts())
 
     def __len__(self):
         return len(self.data)
