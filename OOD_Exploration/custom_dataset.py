@@ -34,16 +34,15 @@ class PlantPathologyDataset(Dataset):
 
         self.data = pd.read_csv(os.path.join(base_dataset_path, dataset_name, "dataset.csv"))
         if self.stage in ["train", "val", "test"]:
-            self.data = self.data[self.data["stage"] == self.stage].reset_index(
-                drop=True
-            )
-        
-        if stage == "train":
             self.base_img_dir = base_dataset_path
             self.data["image_path"] = self.data["image_path"].apply(lambda x: os.path.join(dataset_name, "images_resized", x))
             self.ood_data = pd.read_csv(os.path.join(base_dataset_path, "imagenet-o", "dataset.csv"))
             self.ood_data["image_path"] = self.ood_data["image_path"].apply(lambda x: os.path.join("imagenet-o", "images_resized", x))
             self.data = pd.concat([self.data, self.ood_data], ignore_index=True).reset_index(drop=True)
+
+            self.data = self.data[self.data["stage"] == self.stage].reset_index(
+                drop=True
+            )
 
         self.data["label_encoding"] = self.data["label"].map(self.LABEL_ENCODING)
         self.data["label_encoding"].fillna(-1, inplace=True)

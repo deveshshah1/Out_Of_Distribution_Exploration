@@ -32,7 +32,7 @@ plant_label_encoding:
     "rust": 2
     "frog_eye_leaf_spot": 3
     "powdery_mildew": 4
-    "ood_train_wild": 5
+    "ood_wild": 5
 
 wandb_config:
   desc: Weights and Biases Configuration
