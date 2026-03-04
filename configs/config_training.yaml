@@ -7,6 +7,7 @@ dataset_configs:
     stanfordcars: "stanfordcars"
     flowers102: "flowers102"
     dtd: "dtd"
+    imagenet-o: "imagenet-o"
 
 training_hyperparameters:
   desc: Training Hyperparameters
@@ -16,6 +17,7 @@ training_hyperparameters:
     learning_rate: 0.001
     weight_decay: 0.0001
     warmup_steps: 4000
+    lambda_ood: 0.5
 
 experiment_details:
   desc: Experiment Details
