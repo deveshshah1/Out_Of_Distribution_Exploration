@@ -107,6 +107,7 @@ class PyLModel(pl.LightningModule):
         self.model = BaselineModel(num_classes=num_classes)
         self.criterion = torch.nn.CrossEntropyLoss()
         self.lambda_ood = config_training["training_hyperparameters"]["lambda_ood"]
+        self.warmup_epochs = config_training["training_hyperparameters"]["warmup_epochs"]
 
         self.val_acc = Accuracy(
             task="multiclass", num_classes=num_classes, average="micro"
@@ -136,7 +137,8 @@ class PyLModel(pl.LightningModule):
         uniform = torch.ones_like(outputs_ood) / outputs_ood.size(1)
         loss_ood = F.cross_entropy(outputs_ood, uniform)
 
-        loss = loss_id + self.lambda_ood * loss_ood
+        effective_lambda = 0.0 if self.current_epoch < self.warmup_epochs else self.lambda_ood
+        loss = loss_id + effective_lambda * loss_ood
 
         _, preds = torch.max(outputs_id, 1)
         acc = torch.sum(preds == labels_id).float() / len(labels_id)
