@@ -14,11 +14,11 @@ training_hyperparameters:
   value:
     batch_size: 32
     num_epochs: 25
-    learning_rate: 0.001
+    learning_rate: 0.00001
     weight_decay: 0.0001
-    warmup_steps: 2000
-    lambda_ood: 0.01
-    warmup_epochs: 10
+    warmup_steps: 4000
+    lambda_ood: 0.15
+    warmup_epochs: 2
 
 experiment_details:
   desc: Experiment Details
@@ -26,6 +26,7 @@ experiment_details:
     model_dir: "./trained_models/"
     experiment_name: "e4_outlier_exposure"
     use_wandb: True
+    base_model_ckpt: "./trained_models/e1_baseline/checkpoints/likely-capybara-9_best_val_balanced_accuracy.ckpt"
 
 plant_label_encoding:
   desc: Plant Label Encoding

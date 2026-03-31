@@ -1,5 +1,6 @@
 import os
 import yaml
+import torch
 import pytorch_lightning as pl
 from pytorch_lightning.loggers import WandbLogger
 from pytorch_lightning.callbacks import (
@@ -46,6 +47,8 @@ def train(use_wandb=True):
     # Create Model
     print("Creating Model")
     model = PyLModel()
+    e1_checkpoint = torch.load(config_training["experiment_details"]["base_model_ckpt"], map_location=torch.device("cpu"))
+    model.load_state_dict(e1_checkpoint["state_dict"])
     model_summary = ModelSummary(max_depth=2)
 
     # Create callbacks
