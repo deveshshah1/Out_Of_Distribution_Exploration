@@ -116,12 +116,22 @@ def define_all_callbacks(model_dir, model_name):
         save_last=False,
         verbose=True,
     )
+    checkpoint_callback_5 = ModelCheckpoint(
+        dirpath=model_dir,
+        filename=f"{model_name}_best_val_ood_auroc",
+        monitor="val/ood_auroc",
+        mode="max",
+        save_top_k=1,
+        save_last=False,
+        verbose=True,
+    )
 
     callbacks = [
         checkpoint_callback_1,
         checkpoint_callback_2,
         checkpoint_callback_3,
         checkpoint_callback_4,
+        checkpoint_callback_5,
     ]
 
     return callbacks
