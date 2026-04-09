@@ -224,6 +224,7 @@ class PyLModel(pl.LightningModule):
             for label in labels
         ]
         pred_label_name = [self.LABEL_DECODING[pred.item()] for pred in preds]
+        energy_score = -torch.logsumexp(logits, dim=-1)
 
         return {
             "id": ids,
@@ -232,6 +233,7 @@ class PyLModel(pl.LightningModule):
             "embedding": emb,
             "outputs": outputs,
             "logits": logits,
+            "energy_score": energy_score,
         }
 
     def configure_optimizers(self):

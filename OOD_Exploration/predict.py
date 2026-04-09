@@ -26,7 +26,8 @@ def predict(
     # Find correct ckpt for given model run
     model_dir = config_training["experiment_details"]["model_dir"]
     exp_dir = config_training["experiment_details"]["experiment_name"]
-    ckpt_dir = os.path.join(model_dir, exp_dir, "checkpoints")
+    # ckpt_dir = os.path.join(model_dir, exp_dir, "checkpoints")
+    ckpt_dir = config_training["experiment_details"]["base_model_ckpt"].split("checkpoints")[0] + "checkpoints"
     all_ckpts = os.listdir(ckpt_dir)
     run_name = all_ckpts[0].split("_")[0]
     ckpt_path = f"{run_name}{ckpt_to_use}.ckpt"
@@ -72,12 +73,13 @@ def predict(
 
     # Accumulate predictions
     print("Accumulating predictions...")
-    id, embedding, predicted_label, true_label, outputs, logits = [], [], [], [], [], []
+    id, embedding, predicted_label, true_label, outputs, logits, energy_score = [], [], [], [], [], [], []
     for batch in out_batches:
         id.append(np.array(batch["id"]))
         embedding.append(batch["embedding"].cpu().numpy().astype(np.float32))
         predicted_label.append(np.array(batch["predicted_label"]))
         true_label.append(np.array(batch["true_label"]))
+        energy_score.append(batch["energy_score"].cpu().numpy().astype(np.float32))
         outputs.append(batch["outputs"].cpu().numpy().astype(np.float32))
         logits.append(batch["logits"].cpu().numpy().astype(np.float32))
 
@@ -85,6 +87,7 @@ def predict(
     embedding = np.concatenate(embedding, axis=0)
     predicted_label = np.concatenate(predicted_label, axis=0)
     true_label = np.concatenate(true_label, axis=0)
+    energy_score = np.concatenate(energy_score, axis=0)
     outputs = np.concatenate(outputs, axis=0)
     logits = np.concatenate(logits, axis=0)
 
@@ -109,6 +112,7 @@ def predict(
             "embedding": embedding_list,
             "outputs": outputs_list,
             "logits": logits_list,
+            "energy_score": energy_score,
         }
     )
 
