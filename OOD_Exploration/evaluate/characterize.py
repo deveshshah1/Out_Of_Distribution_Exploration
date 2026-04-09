@@ -65,7 +65,7 @@ if __name__ == "__main__":
         "flowers102",
         "dtd",
     ]
-    all_ckpts = ["_best_val_loss", "_best_train_loss", "_best_val_balanced_accuracy"]
+    all_ckpts = ["_best_val_loss", "_best_train_loss", "_best_val_balanced_accuracy", "_best_val_ood_auroc"]
 
     for ckpt in all_ckpts:
         for model_dataset_name in datasets_of_interest:
