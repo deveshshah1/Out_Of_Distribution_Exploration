@@ -175,8 +175,10 @@ class PyLModel(pl.LightningModule):
             self.val_per_class_acc.update(preds, labels)
             self.val_id_energy_scores.append(energy_scores.detach().cpu())
             self.log("val/loss", loss, prog_bar=True, on_step=False, on_epoch=True, add_dataloader_idx=False)
+            self.log("val/energy_id_mean", energy_scores.mean(), prog_bar=True, on_step=False, on_epoch=True, add_dataloader_idx=False)
         elif dataloader_idx == 1:
             self.val_ood_energy_scores.append(energy_scores.detach().cpu())
+            self.log("val/energy_ood_mean", energy_scores.mean(), prog_bar=True, on_step=False, on_epoch=True, add_dataloader_idx=False)
 
     def on_validation_epoch_end(self):
         # Accuracy metrics
