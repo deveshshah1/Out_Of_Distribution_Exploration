@@ -107,6 +107,8 @@ class PyLModel(pl.LightningModule):
         self.model = BaselineModel(num_classes=num_classes)
         self.criterion = torch.nn.CrossEntropyLoss()
         self.lambda_ood = config_training["training_hyperparameters"]["lambda_ood"]
+        self.m_in = config_training["training_hyperparameters"]["m_in"]
+        self.m_out = config_training["training_hyperparameters"]["m_out"]
         self.warmup_epochs = config_training["training_hyperparameters"]["warmup_epochs"]
 
         self.val_acc = Accuracy(
@@ -119,8 +121,8 @@ class PyLModel(pl.LightningModule):
             task="multiclass", num_classes=num_classes, average="none"
         )
 
-        self.val_id_ood_scores = []
-        self.val_ood_ood_scores = []
+        self.val_id_energy_scores = []
+        self.val_ood_energy_scores = []
 
     def training_step(self, batch, batch_idx):
         batch_id = batch["id"]
@@ -134,18 +136,26 @@ class PyLModel(pl.LightningModule):
 
         inputs_ood = batch_ood["image"]
         _, outputs_ood = self.model(inputs_ood)
-        uniform = torch.ones_like(outputs_ood) / outputs_ood.size(1)
-        loss_ood = F.cross_entropy(outputs_ood, uniform)
+
+        # energy scores
+        energy_id = -torch.logsumexp(outputs_id, dim=-1) # want these low (more negative)
+        energy_ood = -torch.logsumexp(outputs_ood, dim=-1) # want these high (less negative)
+        # margin hinge loss to push energy_id below m_in and energy_ood above m_out
+        loss_energy = (
+            torch.pow(F.relu(energy_id - self.m_in), 2).mean() + torch.pow(F.relu(self.m_out - energy_ood), 2).mean()
+        )
 
         effective_lambda = 0.0 if self.current_epoch < self.warmup_epochs else self.lambda_ood
-        loss = loss_id + effective_lambda * loss_ood
+        loss = loss_id + effective_lambda * loss_energy
 
         _, preds = torch.max(outputs_id, 1)
         acc = torch.sum(preds == labels_id).float() / len(labels_id)
 
         self.log("train/loss", loss, prog_bar=True, on_step=True, on_epoch=True)
         self.log("train/loss_id", loss_id, prog_bar=True, on_step=True, on_epoch=True)
-        self.log("train/loss_ood", loss_ood, prog_bar=True, on_step=True, on_epoch=True)
+        self.log("train/loss_energy", loss_energy, prog_bar=True, on_step=True, on_epoch=True)
+        self.log("train/energy_id_mean", energy_id.mean(), prog_bar=True, on_step=True, on_epoch=True)
+        self.log("train/energy_ood_mean", energy_ood.mean(), prog_bar=True, on_step=True, on_epoch=True)
         self.log("train/accuracy", acc, prog_bar=True, on_step=True, on_epoch=True)
 
         return loss
@@ -155,7 +165,7 @@ class PyLModel(pl.LightningModule):
         labels = batch["label"]
 
         _, outputs = self.model(inputs)
-        ood_scores = -outputs.softmax(dim=-1).max(dim=-1).values
+        energy_scores = -torch.logsumexp(outputs, dim=-1)
 
         if dataloader_idx == 0:
             loss = self.criterion(outputs, labels)
@@ -163,10 +173,10 @@ class PyLModel(pl.LightningModule):
             self.val_acc.update(preds, labels)
             self.val_balanced_acc.update(preds, labels)
             self.val_per_class_acc.update(preds, labels)
-            self.val_id_ood_scores.append(ood_scores.detach().cpu())
+            self.val_id_energy_scores.append(energy_scores.detach().cpu())
             self.log("val/loss", loss, prog_bar=True, on_step=False, on_epoch=True, add_dataloader_idx=False)
         elif dataloader_idx == 1:
-            self.val_ood_ood_scores.append(ood_scores.detach().cpu())
+            self.val_ood_energy_scores.append(energy_scores.detach().cpu())
 
     def on_validation_epoch_end(self):
         # Accuracy metrics
@@ -186,9 +196,9 @@ class PyLModel(pl.LightningModule):
         self.val_balanced_acc.reset()
         self.val_per_class_acc.reset()
 
-        # ODO metrics
-        id_scores = torch.cat(self.val_id_ood_scores)    # low scores, ID images
-        ood_scores = torch.cat(self.val_ood_ood_scores) # high scores, OOD images
+        # OOD metrics
+        id_scores = torch.cat(self.val_id_energy_scores)    # low scores, ID images
+        ood_scores = torch.cat(self.val_ood_energy_scores) # high scores, OOD images
 
         labels = torch.cat([torch.zeros(len(id_scores)), torch.ones(len(ood_scores))])
         all_scores = torch.cat([id_scores, ood_scores])
@@ -200,8 +210,8 @@ class PyLModel(pl.LightningModule):
         self.log("val/ood_auroc", auroc, prog_bar=True)
         self.log("val/ood_fpr95", fpr95, prog_bar=True)
 
-        self.val_id_ood_scores.clear()
-        self.val_ood_ood_scores.clear()
+        self.val_id_energy_scores.clear()
+        self.val_ood_energy_scores.clear()
 
     def predict_step(self, batch, batch_idx):
         # Get inputs

@@ -26,8 +26,7 @@ def predict(
     # Find correct ckpt for given model run
     model_dir = config_training["experiment_details"]["model_dir"]
     exp_dir = config_training["experiment_details"]["experiment_name"]
-    # ckpt_dir = os.path.join(model_dir, exp_dir, "checkpoints")
-    ckpt_dir = config_training["experiment_details"]["base_model_ckpt"].split("checkpoints")[0] + "checkpoints"
+    ckpt_dir = os.path.join(model_dir, exp_dir, "checkpoints")
     all_ckpts = os.listdir(ckpt_dir)
     run_name = all_ckpts[0].split("_")[0]
     ckpt_path = f"{run_name}{ckpt_to_use}.ckpt"
