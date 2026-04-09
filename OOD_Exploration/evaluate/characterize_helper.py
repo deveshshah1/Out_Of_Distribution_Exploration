@@ -118,9 +118,11 @@ def plot_histogram_confidence_by_class(
     if n_cols == 1:
         axes = axes.reshape(-1, 1)
 
-    scores = df[outputs_or_logits].apply(max)
+    # scores = df[outputs_or_logits].apply(max)
+    scores = df["energy_score"]
     if ood_df is not None:
-        ood_scores = ood_df[outputs_or_logits].apply(max)
+        # ood_scores = ood_df[outputs_or_logits].apply(max)
+        ood_scores = ood_df["energy_score"]
 
     for row_idx, cls in enumerate(classes):
         # --- Left plot: Correct vs Incorrect (existing behavior) ---
@@ -151,9 +153,9 @@ def plot_histogram_confidence_by_class(
         )
         ax_left.set_xlabel("Max Confidence Score", fontsize=10)
         ax_left.set_ylabel("Count", fontsize=10)
-        ax_left.set_xlim(0, 1)
+        # ax_left.set_xlim(0, 1)
         ax_left.legend(fontsize=9)
-        _add_threshold_lines(ax_left)
+        # _add_threshold_lines(ax_left)
 
         # --- Right plot: In-distribution true samples vs OOD predicted as cls ---
         if ood_df is not None:
