@@ -17,7 +17,7 @@ training_hyperparameters:
     learning_rate: 0.0001
     weight_decay: 0.0001
     warmup_steps: 4000
-    lambda_ood: 0.1
+    lambda_ood: 0.05
     m_in: -7.1
     m_out: -4.7
     warmup_epochs: 2
