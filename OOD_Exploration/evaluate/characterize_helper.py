@@ -186,7 +186,7 @@ def plot_histogram_confidence_by_class(
             )
             ax_right.set_xlabel("Max Confidence Score", fontsize=10)
             ax_right.set_ylabel("Count", fontsize=10)
-            ax_right.set_xlim(0, 1)
+            # ax_right.set_xlim(0, 1)
             ax_right.legend(fontsize=9)
             _add_threshold_lines(ax_right)
 
