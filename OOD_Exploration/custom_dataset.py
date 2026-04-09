@@ -33,7 +33,8 @@ class PlantPathologyDataset(Dataset):
         self.LABEL_DECODING = {v: k for k, v in self.LABEL_ENCODING.items()}
 
         self.data = pd.read_csv(os.path.join(base_dataset_path, dataset_name, "dataset.csv"))
-        self.data = self.data[self.data["stage"] == self.stage].reset_index(drop=True)
+        if stage != "ALL":
+            self.data = self.data[self.data["stage"] == self.stage].reset_index(drop=True)
 
         self.data["label_encoding"] = self.data["label"].map(self.LABEL_ENCODING)
         self.data["label_encoding"].fillna(-1, inplace=True)
