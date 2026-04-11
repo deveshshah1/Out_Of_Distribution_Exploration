@@ -112,6 +112,7 @@ class PyLModel(pl.LightningModule):
         num_classes = len(self.LABEL_ENCODING)
         self.model = BaselineModel(num_classes=num_classes)
         self.warmup_epochs = config_training["training_hyperparameters"]["warmup_epochs"]
+        self.criterion = torch.nn.CrossEntropyLoss()
 
         # ALM dual variables
         self.register_buffer("lambda1", torch.tensor(0.0)) # constraint 1: OOD FPR
