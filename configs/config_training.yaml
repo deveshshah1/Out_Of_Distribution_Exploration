@@ -14,17 +14,17 @@ training_hyperparameters:
   value:
     batch_size: 32
     num_epochs: 25
-    learning_rate: 0.00001
+    learning_rate: 0.0001
     weight_decay: 0.0001
     warmup_steps: 4000
     warmup_epochs: 2
     beta1: 0.1
     beta2: 0.1
     alpha: 0.05
-    tau: 0.05
-    lr_lambda: 0.01
+    tau: 0.3
+    lr_lambda: 0.1
     gamma: 1.5
-    tol: 0.01
+    tol: 0.05
 
 experiment_details:
   desc: Experiment Details
