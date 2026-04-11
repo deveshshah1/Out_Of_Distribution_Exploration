@@ -18,6 +18,13 @@ training_hyperparameters:
     weight_decay: 0.0001
     warmup_steps: 4000
     warmup_epochs: 2
+    beta1: 0.1
+    beta2: 0.1
+    alpha: 0.05
+    tau: 0.05
+    lr_lambda: 0.01
+    gamma: 1.5
+    tol: 0.01
 
 experiment_details:
   desc: Experiment Details

@@ -105,8 +105,35 @@ class PyLModel(pl.LightningModule):
 
         num_classes = len(self.LABEL_ENCODING)
         self.model = BaselineModel(num_classes=num_classes)
-        self.criterion = torch.nn.CrossEntropyLoss()
         self.warmup_epochs = config_training["training_hyperparameters"]["warmup_epochs"]
+
+        # ALM dual variables
+        self.register_buffer("lambda1", torch.tensor(0.0)) # constraint 1: OOD FPR
+        self.register_buffer("lambda2", torch.tensor(0.0)) # constraint 2: ID accuracy
+
+        # ALM penalty weights - grow over time to enforce constraints more strongly
+        self.beta1 = config_training["training_hyperparameters"]["beta1"]
+        self.beta2 = config_training["training_hyperparameters"]["beta2"]
+
+        # Constraint thresholds
+        self.alpha = config_training["training_hyperparameters"]["alpha"] # max false alarm rate
+        self.tau = config_training["training_hyperparameters"]["tau"]   # max ID error
+
+        # Dual variable learning rate
+        self.lr_lambda = config_training["training_hyperparameters"]["lr_lambda"]
+
+        # Penaly multipier 
+        self.gamma = config_training["training_hyperparameters"]["gamma"]
+
+        # Tolerance for constraint violation before growing beta
+        self.tol = config_training["training_hyperparameters"]["tol"]
+
+        # Accumulate epoch level constraint violations for lambda update
+        self.epoch_ood_constraint_vals = []
+        self.epoch_cls_constraint_vals = []
+
+        # learnable sigmoid slope
+        self.w = torch.nn.Parameter(torch.tensor(1.0))
 
         self.val_acc = Accuracy(
             task="multiclass", num_classes=num_classes, average="micro"
@@ -120,6 +147,22 @@ class PyLModel(pl.LightningModule):
 
         self.val_id_energy_scores = []
         self.val_ood_energy_scores = []
+    
+    def _energy(self, logits):
+        return -torch.logsumexp(logits, dim=-1)
+    
+    def _lood_in(self, energy):
+        # L_ood(x, in) = sigmoid(-w * E(x)) - want this low for wild samples
+        return torch.sigmoid(-self.w * energy)
+
+    def _lood_out(self, energy):
+        # L_ood(x, out) = sigmoid(w * E(x)) - want this low for ID samples
+        return torch.sigmoid(self.w * energy)
+    
+    def _psi(self, u, v, beta):
+        # ALM penalty function
+        condition = beta * u + v >= 0
+        return torch.where(condition, v * u + (beta / 2) * u ** 2, -v ** 2 / (2 * beta))
 
     def training_step(self, batch, batch_idx):
         batch_id = batch["id"]
@@ -127,35 +170,64 @@ class PyLModel(pl.LightningModule):
 
         inputs_id = batch_id["image"]
         labels_id = batch_id["label"]
-
-        _, outputs_id = self.model(inputs_id)
-        loss_id = self.criterion(outputs_id, labels_id)
-
         inputs_ood = batch_ood["image"]
-        _, outputs_ood = self.model(inputs_ood)
 
-        # energy scores
-        energy_id = -torch.logsumexp(outputs_id, dim=-1) # want these low (more negative)
-        energy_ood = -torch.logsumexp(outputs_ood, dim=-1) # want these high (less negative)
-        # margin hinge loss to push energy_id below m_in and energy_ood above m_out
-        loss_energy = (
-            torch.pow(F.relu(energy_id - self.m_in), 2).mean() + torch.pow(F.relu(self.m_out - energy_ood), 2).mean()
-        )
+        _, logits_id = self.model(inputs_id)
+        _, logits_ood = self.model(inputs_ood)
 
-        effective_lambda = 0.0 if self.current_epoch < self.warmup_epochs else self.lambda_ood
-        loss = loss_id + effective_lambda * loss_energy
+        energy_id = self._energy(logits_id)
+        energy_ood = self._energy(logits_ood)
 
-        _, preds = torch.max(outputs_id, 1)
+        # Objective function: minimize fractino of OOD classified as ID
+        objective = self._lood_in(energy_ood).mean()
+
+        # Constraint 1: ID false alarm rate <= alpha
+        # L_ood(id sample, out) should be low - measures how often ID is called OOD
+        c1 = self._lood_out(energy_id).mean() - self.alpha
+
+        # Constraint 2: ID classification error <= tau
+        cls_loss = F.cross_entropy(logits_id, labels_id)
+        c2 = cls_loss - self.tau
+
+        # ALM loss
+        loss = objective + self._psi(c1, self.lambda1, self.beta1) + self._psi(c2, self.lambda2, self.beta2)
+
+        # Accumulate constraint violations for epoch-level lambda updates
+        self.epoch_ood_constraint_vals.append(c1.detach())
+        self.epoch_cls_constraint_vals.append(c2.detach())
+
+        _, preds = torch.max(logits_id, 1)
         acc = torch.sum(preds == labels_id).float() / len(labels_id)
 
         self.log("train/loss", loss, prog_bar=True, on_step=True, on_epoch=True)
-        self.log("train/loss_id", loss_id, prog_bar=True, on_step=True, on_epoch=True)
-        self.log("train/loss_energy", loss_energy, prog_bar=True, on_step=True, on_epoch=True)
-        self.log("train/energy_id_mean", energy_id.mean(), prog_bar=True, on_step=True, on_epoch=True)
-        self.log("train/energy_ood_mean", energy_ood.mean(), prog_bar=True, on_step=True, on_epoch=True)
         self.log("train/accuracy", acc, prog_bar=True, on_step=True, on_epoch=True)
+        self.log("train/objective", objective, prog_bar=False, on_step=True, on_epoch=True)
+        self.log("train/c1_ood", c1, prog_bar=False, on_step=True, on_epoch=True)
+        self.log("train/c2_cls", c2, prog_bar=False, on_step=True, on_epoch=True)
+        self.log("train/lambda1", self.lambda1, prog_bar=False, on_step=True, on_epoch=True)
+        self.log("train/lambda2", self.lambda2, prog_bar=False, on_step=True, on_epoch=True)
+        self.log("train/beta1", self.beta1, prog_bar=False, on_step=True, on_epoch=True)
+        self.log("train/beta2", self.beta2, prog_bar=False, on_step=True, on_epoch=True)
 
         return loss
+    
+    def on_train_epoch_end(self):
+        # Lambda update (gradient asscent on dual variables)
+        mean_c1 = torch.stack(self.epoch_ood_constraint_vals).mean()
+        mean_c2 = torch.stack(self.epoch_cls_constraint_vals).mean()
+
+        self.lambda1 = torch.clamp(self.lambda1 + self.lr_lambda * mean_c1, min=0)
+        self.lambda2 = torch.clamp(self.lambda2 + self.lr_lambda * mean_c2, min=0)
+
+        # Grow beta if constraint still violated beyond tolerance
+        if mean_c1 > self.tol:
+            self.beta1 *= self.gamma
+        if mean_c2 > self.tol:
+            self.beta2 *= self.gamma
+
+        # Clear epoch-level constraint values
+        self.epoch_ood_constraint_vals.clear()
+        self.epoch_cls_constraint_vals.clear()
 
     def validation_step(self, batch, batch_idx, dataloader_idx=0):
         inputs = batch["image"]
@@ -247,7 +319,7 @@ class PyLModel(pl.LightningModule):
 
     def configure_optimizers(self):
         optimizer = torch.optim.AdamW(
-            self.model.parameters(),
+            self.parameters(),
             lr=config_training["training_hyperparameters"]["learning_rate"],
             weight_decay=config_training["training_hyperparameters"]["weight_decay"],
         )
