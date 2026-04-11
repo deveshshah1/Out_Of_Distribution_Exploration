@@ -2,7 +2,7 @@ import yaml
 import torch
 import pytorch_lightning as pl
 
-from torch.utils.data import DataLoader, WeightedRandomSampler
+from torch.utils.data import DataLoader, WeightedRandomSampler, ConcatDataset
 import torch.nn.functional as F
 from torchmetrics import Accuracy
 from pytorch_lightning.utilities import CombinedLoader
@@ -31,9 +31,15 @@ class PyLDataModule(pl.LightningDataModule):
         self.train_set_id = PlantPathologyDataset(
             stage="train", base_dataset_path=self.base_dataset_path, dataset_name=self.dataset_name
         )
+
+        self.train_set_wild_id = PlantPathologyDataset(
+            stage="train_wild_in_distribution", base_dataset_path=self.base_dataset_path, dataset_name=self.dataset_name,
+        )
         self.train_set_ood = PlantPathologyDataset(
             stage="train", base_dataset_path=self.base_dataset_path, dataset_name=self.ood_dataset_name
         )
+        self.train_set_wild = ConcatDataset([self.train_set_wild_id, self.train_set_ood])
+
         self.val_set_id = PlantPathologyDataset(
             stage="val", base_dataset_path=self.base_dataset_path, dataset_name=self.dataset_name
         )
@@ -58,7 +64,7 @@ class PyLDataModule(pl.LightningDataModule):
             persistent_workers=True,
         )
         train_ood_loader = DataLoader(
-            self.train_set_ood,
+            self.train_set_wild,
             batch_size=self.batch_size,
             shuffle=True,
             pin_memory=True,
