@@ -30,7 +30,7 @@ experiment_details:
   desc: Experiment Details
   value:
     model_dir: "./trained_models/"
-    experiment_name: "e5_energy_based_finetuning"
+    experiment_name: "e6_woods"
     use_wandb: True
     base_model_ckpt: "./trained_models/e1_baseline/checkpoints/likely-capybara-9_best_val_balanced_accuracy.ckpt"
 
