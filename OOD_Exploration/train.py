@@ -48,7 +48,9 @@ def train(use_wandb=True):
     print("Creating Model")
     model = PyLModel()
     e1_checkpoint = torch.load(config_training["experiment_details"]["base_model_ckpt"], map_location=torch.device("cpu"))
-    model.load_state_dict(e1_checkpoint["state_dict"])
+    missing_keys, unexpected_keys = model.load_state_dict(e1_checkpoint["state_dict"], strict=False)
+    print("Missing keys (will init fresh):", missing_keys)
+    print("Unexpected keys (will be ignored):", unexpected_keys)
     model_summary = ModelSummary(max_depth=2)
 
     # Create callbacks
