@@ -106,9 +106,6 @@ class PyLModel(pl.LightningModule):
         num_classes = len(self.LABEL_ENCODING)
         self.model = BaselineModel(num_classes=num_classes)
         self.criterion = torch.nn.CrossEntropyLoss()
-        self.lambda_ood = config_training["training_hyperparameters"]["lambda_ood"]
-        self.m_in = config_training["training_hyperparameters"]["m_in"]
-        self.m_out = config_training["training_hyperparameters"]["m_out"]
         self.warmup_epochs = config_training["training_hyperparameters"]["warmup_epochs"]
 
         self.val_acc = Accuracy(
