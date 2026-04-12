@@ -135,6 +135,9 @@ class PyLModel(pl.LightningModule):
         # Tolerance for constraint violation before growing beta
         self.tol = config_training["training_hyperparameters"]["tol"]
 
+        # Get eta
+        self.eta = config_training["training_hyperparameters"]["eta"]
+
         # Accumulate epoch level constraint violations for lambda update
         self.epoch_ood_constraint_vals = []
         self.epoch_cls_constraint_vals = []
@@ -162,10 +165,6 @@ class PyLModel(pl.LightningModule):
         # L_ood(x, in) = sigmoid(-w * E(x)) - want this low for wild samples
         return torch.sigmoid(-self.w * energy)
 
-    def _lood_out(self, energy):
-        # L_ood(x, out) = sigmoid(w * E(x)) - want this low for ID samples
-        return torch.sigmoid(self.w * energy)
-    
     def _psi(self, u, v, beta):
         # ALM penalty function
         condition = beta * u + v >= 0
@@ -190,7 +189,7 @@ class PyLModel(pl.LightningModule):
 
         # Constraint 1: ID false alarm rate <= alpha
         # L_ood(id sample, out) should be low - measures how often ID is called OOD
-        c1 = self._lood_out(energy_id).mean() - self.alpha
+        c1 = torch.sigmoid(-self.w * (energy_id - self.eta)).mean() - self.alpha
 
         # Constraint 2: ID classification error <= tau
         cls_loss = F.cross_entropy(logits_id, labels_id)
