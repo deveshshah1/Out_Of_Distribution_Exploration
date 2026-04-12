@@ -228,9 +228,9 @@ class PyLModel(pl.LightningModule):
 
         # Grow beta if constraint still violated beyond tolerance
         if mean_c1 > self.tol:
-            self.beta1 = (self.beta1 * self.gamma).clamp(max=5.0)
+            self.beta1 = min(self.beta1 * self.gamma, 5.0)
         if mean_c2 > self.tol:
-            self.beta2 = (self.beta2 * self.gamma).clamp(max=5.0)
+            self.beta2 = min(self.beta2 * self.gamma, 5.0)
 
         # Clear epoch-level constraint values
         self.epoch_ood_constraint_vals.clear()
