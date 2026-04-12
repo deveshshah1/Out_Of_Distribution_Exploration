@@ -39,7 +39,7 @@ class PlantPathologyDataset(Dataset):
         self.data["label_encoding"] = self.data["label"].map(self.LABEL_ENCODING)
         self.data["label_encoding"].fillna(-1, inplace=True)
 
-        if self.stage == "train":
+        if self.stage == "train" or self.stage == "train_wild_in_distribution":
             self.transform = transforms.Compose(
                 [
                     transforms.Resize((224, 224)),
@@ -112,7 +112,10 @@ class CovariateShiftDataset(Dataset):
     
     def __getitem__(self, idx):
         sample = self.base_dataset[idx]
-        image = sample["image"]
+        item = self.base_dataset.data.iloc[idx]
+        img_path = f"{self.base_dataset.base_img_dir}/{item['image_path']}"
+        image = Image.open(img_path).convert("RGB")  
+
         image = self.covariate_transform(image)
         sample["image"] = image
         return sample
