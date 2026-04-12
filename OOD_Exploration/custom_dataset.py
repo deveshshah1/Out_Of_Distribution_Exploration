@@ -112,8 +112,15 @@ class CovariateShiftDataset(Dataset):
     
     def __getitem__(self, idx):
         sample = self.base_dataset[idx]
-        item = self.base_dataset.data.iloc[idx]
-        img_path = f"{self.base_dataset.base_img_dir}/{item['image_path']}"
+
+        actual_idx = idx
+        dataset = self.base_dataset
+        if isinstance(self.base_dataset, torch.utils.data.Subset):
+            actual_idx = self.base_dataset.indices[idx]
+            dataset = self.base_dataset.dataset
+        
+        item = dataset.data.iloc[actual_idx]
+        img_path = f"{dataset.base_img_dir}/{item['image_path']}"
         image = Image.open(img_path).convert("RGB")  
 
         image = self.covariate_transform(image)
