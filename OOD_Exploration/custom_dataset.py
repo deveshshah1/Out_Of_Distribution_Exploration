@@ -89,6 +89,33 @@ class PlantPathologyDataset(Dataset):
             image = self.transform(image)
 
         return {"id": id, "image": image, "label": label}
+    
+
+class CovariateShiftDataset(Dataset):
+    def __init__(self, base_dataset):
+        self.base_dataset = base_dataset
+        self.covariate_transform = transforms.Compose([
+            transforms.Resize((224, 224)),
+            # things globally not seen during training
+            transforms.RandomGrayscale(p=0.4),
+            transforms.RandomSolarize(threshold=128, p=0.3),
+            transforms.RandomPosterize(bits=2, p=0.3),
+            transforms.RandomEqualize(p=0.3),
+            # blur and color jitter cranked way beyond training levels
+            v2.GaussianBlur(kernel_size=(21, 21), sigma=(8.0, 15.0)),
+            v2.ColorJitter(brightness=0.8, contrast=0.8, saturation=0.8, hue=0.3),
+            transforms.ToTensor(),
+        ])
+    
+    def __len__(self):
+        return len(self.base_dataset)
+    
+    def __getitem__(self, idx):
+        sample = self.base_dataset[idx]
+        image = sample["image"]
+        image = self.covariate_transform(image)
+        sample["image"] = image
+        return sample
 
 
 if __name__ == "__main__":

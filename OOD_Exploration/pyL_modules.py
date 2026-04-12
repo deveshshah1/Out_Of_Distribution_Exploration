@@ -2,13 +2,13 @@ import yaml
 import torch
 import pytorch_lightning as pl
 
-from torch.utils.data import DataLoader, WeightedRandomSampler, ConcatDataset
+from torch.utils.data import DataLoader, WeightedRandomSampler, ConcatDataset, Subset
 import torch.nn.functional as F
 from torchmetrics import Accuracy
 from pytorch_lightning.utilities import CombinedLoader
 from sklearn.metrics import roc_auc_score
 
-from custom_dataset import PlantPathologyDataset
+from custom_dataset import PlantPathologyDataset, CovariateShiftDataset
 from model import BaselineModel
 from utils.custom_scheduluer import NoamScheduler
 
@@ -32,13 +32,22 @@ class PyLDataModule(pl.LightningDataModule):
             stage="train", base_dataset_path=self.base_dataset_path, dataset_name=self.dataset_name
         )
 
-        self.train_set_wild_id = PlantPathologyDataset(
+        train_set_wild_id = PlantPathologyDataset(
             stage="train_wild_in_distribution", base_dataset_path=self.base_dataset_path, dataset_name=self.dataset_name,
         )
+        # set 20% of train set wild id to covariate
+        num_covariate = int(0.2 * len(train_set_wild_id))
+        perm = torch.randperm(len(train_set_wild_id))
+        id_wild_indices = perm[:num_covariate]
+        covariate_wild_indices = perm[num_covariate:]
+        id_wild_set = Subset(train_set_wild_id, id_wild_indices)
+        covariate_wild_set = Subset(train_set_wild_id, covariate_wild_indices)
+        covariate_wild_set = CovariateShiftDataset(covariate_wild_set)
+
         self.train_set_ood = PlantPathologyDataset(
             stage="train", base_dataset_path=self.base_dataset_path, dataset_name=self.ood_dataset_name
         )
-        self.train_set_wild = ConcatDataset([self.train_set_wild_id, self.train_set_ood])
+        self.train_set_wild = ConcatDataset([id_wild_set, covariate_wild_set, self.train_set_ood])
 
         self.val_set_id = PlantPathologyDataset(
             stage="val", base_dataset_path=self.base_dataset_path, dataset_name=self.dataset_name
@@ -46,6 +55,7 @@ class PyLDataModule(pl.LightningDataModule):
         self.val_set_ood = PlantPathologyDataset(
             stage="val", base_dataset_path=self.base_dataset_path, dataset_name=self.ood_dataset_name
         )
+        self.val_set_covariate = CovariateShiftDataset(self.val_set_id)
 
     def train_dataloader(self):
         sampler = WeightedRandomSampler(
@@ -97,8 +107,17 @@ class PyLDataModule(pl.LightningDataModule):
             num_workers=4,
             persistent_workers=True,
         )
+        val_covariate_loader = DataLoader(
+            self.val_set_covariate,
+            batch_size=self.batch_size,
+            shuffle=False,
+            pin_memory=True,
+            drop_last=False,
+            num_workers=4,
+            persistent_workers=True,
+        )
 
-        return [val_id_loader, val_ood_loader]
+        return [val_id_loader, val_ood_loader, val_covariate_loader]
 
 class PyLModel(pl.LightningModule):
     def __init__(self, wandb_logger=None):
@@ -153,6 +172,9 @@ class PyLModel(pl.LightningModule):
         )
         self.val_per_class_acc = Accuracy(
             task="multiclass", num_classes=num_classes, average="none"
+        )
+        self.val_acc_covariate = Accuracy(
+            task="multiclass", num_classes=num_classes, average="micro"
         )
 
         self.val_id_energy_scores = []
@@ -254,15 +276,20 @@ class PyLModel(pl.LightningModule):
         elif dataloader_idx == 1:
             self.val_ood_energy_scores.append(energy_scores.detach().cpu())
             self.log("val/energy_ood_mean", energy_scores.mean(), prog_bar=True, on_step=False, on_epoch=True, add_dataloader_idx=False)
+        elif dataloader_idx == 2:
+            _, preds = torch.max(outputs, 1)
+            self.val_acc_covariate.update(preds, labels)
 
     def on_validation_epoch_end(self):
         # Accuracy metrics
         val_acc = self.val_acc.compute()
         balanced_acc = self.val_balanced_acc.compute()
         per_class_acc = self.val_per_class_acc.compute()
+        covariate_acc = self.val_acc_covariate.compute()
 
         self.log("val/accuracy", val_acc, prog_bar=True)
         self.log("val/balanced_accuracy", balanced_acc, prog_bar=True)
+        self.log("val/accuracy_covariate", covariate_acc, prog_bar=True)
 
         for class_idx, acc in enumerate(per_class_acc):
             class_name = self.LABEL_DECODING[class_idx]
@@ -272,6 +299,7 @@ class PyLModel(pl.LightningModule):
         self.val_acc.reset()
         self.val_balanced_acc.reset()
         self.val_per_class_acc.reset()
+        self.val_acc_covariate.reset()
 
         # OOD metrics
         id_scores = torch.cat(self.val_id_energy_scores)    # low scores, ID images
@@ -289,7 +317,7 @@ class PyLModel(pl.LightningModule):
 
         self.val_id_energy_scores.clear()
         self.val_ood_energy_scores.clear()
-
+        
     def predict_step(self, batch, batch_idx):
         # Get inputs
         inputs = batch["image"]
