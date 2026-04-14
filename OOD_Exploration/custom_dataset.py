@@ -76,6 +76,7 @@ class PlantPathologyDataset(Dataset):
         return torch.tensor(weights, dtype=torch.float)
 
     def __getitem__(self, idx):
+        idx = int(idx)
         item = self.data.iloc[idx]
         img_path = f"{self.base_img_dir}/{item['image_path']}"
         image = Image.open(img_path).convert("RGB")  
@@ -116,7 +117,7 @@ class CovariateShiftDataset(Dataset):
         actual_idx = idx
         dataset = self.base_dataset
         if isinstance(self.base_dataset, torch.utils.data.Subset):
-            actual_idx = self.base_dataset.indices[idx]
+            actual_idx = int(self.base_dataset.indices[idx])
             dataset = self.base_dataset.dataset
         
         item = dataset.data.iloc[actual_idx]
