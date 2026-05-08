@@ -51,6 +51,7 @@ git checkout e4_outlier_exposure
 ```
 
 ## Repository Structure
+```
 ├── dataset/                   # dataset directories (images not included)
 │   ├── plantpathology/
 │   ├── standfordcars/
@@ -65,6 +66,7 @@ git checkout e4_outlier_exposure
 │   ├── train.py                # training entry point
 │   └── predict.py                 # inference entry point
 └── requirements.txt
+```
 
 ## Evaluation Metrics
 
