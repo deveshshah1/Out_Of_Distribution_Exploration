@@ -1,7 +1,7 @@
 ############# Creating constant UV env between different repos #############
 # export ENV_NAME=pytorch_260
-# uv venv /Users/deveshshah/Documents/Programming/envs/$ENV_NAME --python 3.11
-# source /Users/deveshshah/Documents/Programming/envs/$ENV_NAME/bin/activate
+# uv venv ./Programming/envs/$ENV_NAME --python 3.11
+# source ./Programming/envs/$ENV_NAME/bin/activate
 # uv pip install -r requirements.txt
 # python -m ipykernel install --user --name=$ENV_NAME --display-name "$ENV_NAME"
 ##############################################################################
