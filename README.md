@@ -1,7 +1,7 @@
 # Out-of-Distribution Detection on Plant Pathology
 
-This repository contains the code for the paper **"Beyond Toy Benchmarks: 
-Evaluating OOD Detection Methods on a Real-World Plant Pathology Dataset"** [arxiv](https://arxiv.org/abs/2605.08618), 
+This repository contains the code for the paper [**"Beyond Toy Benchmarks: 
+Evaluating OOD Detection Methods on a Real-World Plant Pathology Dataset"**](https://arxiv.org/abs/2605.08618), 
 which presents a systematic evaluation of six OOD detection methods on the 
 [Plant Pathology 2021 FGVC8](https://www.kaggle.com/c/plant-pathology-2021-fgvc8) 
 dataset.
