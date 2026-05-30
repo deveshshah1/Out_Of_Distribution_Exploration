@@ -102,11 +102,11 @@ is available [here](https://wandb.ai/deveshshah-university-of-michigan/OOD_Explo
 If you find this work useful, please cite:
 
 ```bibtex
-@article{shah2024ood,
+@article{shah2026ood,
   title={Beyond Toy Benchmarks: Evaluating OOD Detection Methods on a 
          Real-World Plant Pathology Dataset},
   author={Shah, Devesh},
-  year={2024}
+  year={2026}
 }
 ```
 
